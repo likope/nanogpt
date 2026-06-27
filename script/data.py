@@ -41,8 +41,22 @@ def get_batch(split:str):
 
 token_embedding_table = nn.Embedding(vocab_size, vocab_size)
 xb, yb = get_batch("train")
-print(token_embedding_table(xb).shape, vocab_size)
 logits = token_embedding_table(xb)          # (4, 8, 65)
 B, T, C = logits.shape                       # 4, 8, 65
 loss = F.cross_entropy(logits.view(B*T, C), yb.view(B*T))
-print(loss)
+
+class BigramLanguageModel(nn.Module):
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+    def forward(self, xb, targets=None):
+        logits = self.token_embedding_table(xb)
+        if targets is None:
+            return logits
+        else:
+            B, T, C = logits.shape                       # 4, 8, 65
+            loss = F.cross_entropy(logits.view(B*T, C), targets.view(B*T))
+            return logits, loss
+        
+model = BigramLanguageModel(vocab_size)
+logits, loss = model(xb, yb)
