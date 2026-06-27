@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from pathlib import Path
 
 block_size = 8
@@ -37,6 +39,10 @@ def get_batch(split:str):
     y = torch.stack([data_batch[i + 1 : i + 1 + block_size] for i in ix])
     return x, y
 
+token_embedding_table = nn.Embedding(vocab_size, vocab_size)
 xb, yb = get_batch("train")
-print(xb[0])
-print(yb[0])
+print(token_embedding_table(xb).shape, vocab_size)
+logits = token_embedding_table(xb)          # (4, 8, 65)
+B, T, C = logits.shape                       # 4, 8, 65
+loss = F.cross_entropy(logits.view(B*T, C), yb.view(B*T))
+print(loss)
