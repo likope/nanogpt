@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from pathlib import Path
 
 block_size = 8
-batch_size = 4
+batch_size = 32
 Base_path = Path(__file__).parent.parent #/nanogpt
 data_path = Base_path / "data" / "input.txt"
 text = Path(data_path).read_text()
@@ -57,6 +57,17 @@ class BigramLanguageModel(nn.Module):
             B, T, C = logits.shape                       # 4, 8, 65
             loss = F.cross_entropy(logits.view(B*T, C), targets.view(B*T))
             return logits, loss
-        
+
 model = BigramLanguageModel(vocab_size)
-logits, loss = model(xb, yb)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+
+n_steps = 10000
+
+for step in range (n_steps):
+    xb, yb = get_batch("train")
+    logits, loss = model(xb, yb)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    if step % 10 == 0:
+        print(step, loss.item())
