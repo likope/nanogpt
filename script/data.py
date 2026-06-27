@@ -57,6 +57,14 @@ class BigramLanguageModel(nn.Module):
             B, T, C = logits.shape                       # 4, 8, 65
             loss = F.cross_entropy(logits.view(B*T, C), targets.view(B*T))
             return logits, loss
+    def generate(self, xb, max_new_tokens):
+        for i in range(max_new_tokens):
+            logits = self(xb)
+            s = logits[:, -1, :]
+            probs = torch.softmax(s, dim=-1)
+            ix = torch.multinomial(probs, num_samples=1)
+            xb = torch.cat((xb, ix), dim=1)
+        return xb
 
 model = BigramLanguageModel(vocab_size)
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
@@ -71,3 +79,12 @@ for step in range (n_steps):
     optimizer.step()
     if step % 10 == 0:
         print(step, loss.item())
+    
+# start with a single token (the newline char, id 0) in a (1,1) tensor
+context = torch.zeros((1, 1), dtype=torch.long)
+
+# generate 300 new characters
+out = model.generate(context, max_new_tokens=300)
+
+# out is (1, 301) ids — pull row 0, turn to a list, decode to text
+print(decode(out[0].tolist()))
