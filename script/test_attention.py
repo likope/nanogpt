@@ -7,14 +7,14 @@ File per capire come funziona l attention.
 """
 
 torch.manual_seed(1337) #imposto un seed
-B, T, C = 1, 4, 8 #imposto dei parametri fittizi
+B, T, C = 1, 4, 8 #imposto dei parametri fittizi, B = Quante sequenze stai processando in parallelo, T = Quanti token ci sono in sequenza, C = vettore
 x = torch.randn(B, T, C) #genero una matrice casuale
 
 #creazione della classe dell attention
 class Attention(nn.Module):
 
     def __init__(self, head_size):
-        """Costruttore non dinamico che inizializza le risorse"""
+        """Costruttore statico che inizializza le risorse"""
         super().__init__() #chiamata al costruttore della classe madre
         self.head_size = head_size
         self.query = nn.Linear(C, head_size, bias=False) 
@@ -34,8 +34,21 @@ class Attention(nn.Module):
         out = wei @ v #output
         return out
     
-h = Attention(head_size=4)
-out = h(x)
-print(out.shape)                                   # (1, 4, 4)
-print('tril' in dict(h.named_buffers()))           # True
-print('tril' in dict(h.named_parameters()))        # False
+class MultiHeadAttention(nn.Module):
+
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Attention(head_size) for _ in range(num_heads)]) #il modulo contiene una lista di moduli
+        self.proj = nn.Linear(head_size*num_heads, C)
+
+    def forward(self, x):
+        out = [h(x) for h in self.heads] #chiamo ogni testa e gli faccio elaborare x
+        out = torch.cat(out, dim=2) #concateno in un vettore i risultati delle teste
+        out = self.proj(out) #risultato finale
+        return out
+
+num_heads = 4
+head_size = C // num_heads      # = 2
+mha = MultiHeadAttention(num_heads, head_size)
+out = mha(x)
+print(out.shape)
