@@ -52,3 +52,21 @@ head_size = C // num_heads      # = 2
 mha = MultiHeadAttention(num_heads, head_size)
 out = mha(x)
 print(out.shape)
+
+class FeedForward(nn.Module):
+    def __init__(self, n_embd):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(C, 4*C),
+            nn.ReLU(),
+            nn.Linear(4*C, C)
+        )
+
+    def forward(self, x):
+        out = self.net(x)
+        return out
+    
+ff = FeedForward(C)
+x = torch.randn(1, 4, C)
+out = ff(x)
+print("out = ", out.shape)
