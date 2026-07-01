@@ -47,12 +47,6 @@ class MultiHeadAttention(nn.Module):
         out = self.proj(out) #risultato finale
         return out
 
-num_heads = 4
-head_size = C // num_heads      # = 2
-mha = MultiHeadAttention(num_heads, head_size)
-out = mha(x)
-print(out.shape)
-
 class FeedForward(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
@@ -65,8 +59,23 @@ class FeedForward(nn.Module):
     def forward(self, x):
         out = self.net(x)
         return out
+
+class Block(nn.Module):
+    def __init__(self, n_embd, num_heads):
+        super().__init__()
+        head_size = n_embd // num_heads
+        self.mha = MultiHeadAttention(num_heads, head_size)
+        self.ff = FeedForward(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
     
-ff = FeedForward(C)
-x = torch.randn(1, 4, C)
-out = ff(x)
-print("out = ", out.shape)
+    def forward(self, x):
+        x = x + self.mha(self.ln1(x))
+        x = x + self.ff(self.ln2(x))
+        return x
+
+B, T, C = 4, 8, 32
+x = torch.randn(B, T, C)
+block = Block(n_embd=32, num_heads=4)
+out = block(x)
+print(out.shape)   # deve stampare torch.Size([4, 8, 32])
