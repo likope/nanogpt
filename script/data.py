@@ -10,6 +10,7 @@ n_embd = 32
 C = n_embd
 n_layer = 4
 num_heads = 4
+max_new_tokens = 200
 Base_path = Path(__file__).parent.parent #/nanogpt
 data_path = Base_path / "data" / "input.txt"
 text = Path(data_path).read_text()
@@ -135,10 +136,20 @@ class GPT(nn.Module):
             loss = F.cross_entropy(logits, targets)
         return logits, loss
 
+def generate(model, idx, max_new_tokens):
+    for _ in range(max_new_tokens):
+        idx_cond = idx[:, -block_size:]
+        logits, loss = model(idx_cond)
+        logits = logits[:, -1, :]
+        probs = F.softmax(logits, dim=-1)
+        idx_next = torch.multinomial(probs, num_samples=1)
+        idx = torch.cat((idx, idx_next), dim=1)
+    return idx
+
 model = GPT(n_layer, C)
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
-for step in range(5000):
+for step in range(15000):
     xb, yb = get_batch('train')
     logits, loss = model(xb, yb)
     optimizer.zero_grad(set_to_none=True)
@@ -146,3 +157,7 @@ for step in range(5000):
     optimizer.step()
     if step % 500 == 0:
         print(step, loss.item())
+
+context = torch.zeros((1, 1), dtype=torch.long)
+out = generate(model, context, max_new_tokens)
+print(decode(out[0].tolist()))
