@@ -136,7 +136,13 @@ class GPT(nn.Module):
         return logits, loss
 
 model = GPT(n_layer, C)
-xb, yb = get_batch('train')
-logits, loss = model(xb, yb)
-print(logits.shape)
-print(loss)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+
+for step in range(5000):
+    xb, yb = get_batch('train')
+    logits, loss = model(xb, yb)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+    if step % 500 == 0:
+        print(step, loss.item())
