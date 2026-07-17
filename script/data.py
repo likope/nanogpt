@@ -4,12 +4,13 @@ import torch.nn.functional as F
 from pathlib import Path
 
 batch_size = 32 #quante sequenze processi in paralleloa ogni step, se n alto rende il gradiente meno rumoroso
-block_size = 64  #è la lunghezza del contesto, il modello vede fino a n token per prevedere il n+1, 
+block_size = 64  #è la lunghezza del contesto, il modello vede fino a n token per prevedere il n+1,
 n_embd = 128     #è la larghezza della rete
 n_layer = 6     #è la profondita della rete
 num_heads = 4   #numero di teste
 head_size = n_embd // num_heads #ogni testa lavora in un sottospazio di x dimensioni
 max_new_tokens = 200    #numero di token da generare nella risposta finale
+dropout = 0.3 #30%
 device = 'cuda' if torch.cuda.is_available() else 'cpu' #device = gpu senno cpu
 print(f"Device = {device}")
 Base_path = Path(__file__).parent.parent #/nanogpt
@@ -55,7 +56,8 @@ class Attention(nn.Module):
         """Costruttore statico che inizializza le risorse"""
         super().__init__() #chiamata al costruttore della classe madre
         self.head_size = head_size
-        self.query = nn.Linear(n_embd, head_size, bias=False) 
+        self.dropout = nn.Dropout(dropout)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
         self.key = nn.Linear(n_embd, head_size, bias=False)
         self.value = nn.Linear(n_embd, head_size, bias=False) #definisco le operazioni lineari, con numeri casuali all inizializzazione, queste non hanno bias dato che sono degli scalari
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size))) #registro il buffer, questo crea una matrice di uni
@@ -69,9 +71,10 @@ class Attention(nn.Module):
         scores = score * (self.head_size ** -0.5) #ammorbidisco i numeri
         scores = scores.masked_fill(self.tril[:block_size, :block_size] == 0, float('-inf')) #metto tutti i numeri della diagonale superiori a 0
         wei = F.softmax(scores, dim=-1) #applico il softmax
+        wei = self.dropout(wei)
         out = wei @ v #output
         return out
-    
+
 class MultiHeadAttention(nn.Module):
 
     def __init__(self, num_heads, head_size):
@@ -83,15 +86,18 @@ class MultiHeadAttention(nn.Module):
         out = [h(x) for h in self.heads] #chiamo ogni testa e gli faccio elaborare x
         out = torch.cat(out, dim=2) #l output è la somma dei contributi delle singole teste ognuna proiettata dalla sua fetta indipendente di proj
         out = self.proj(out) #risultato finale
+        out = self.dropout(out)
         return out
 
 class FeedForward(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
+        self.dropout = nn.Dropout(dropout)
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4*n_embd),
             nn.ReLU(),
-            nn.Linear(4*n_embd, n_embd)
+            nn.Linear(4*n_embd, n_embd),
+            nn.Dropout(dropout)
         )
 
     def forward(self, x):
@@ -106,7 +112,7 @@ class Block(nn.Module):
         self.ff = FeedForward(n_embd)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
-    
+
     def forward(self, x):
         x = x + self.mha(self.ln1(x))
         x = x + self.ff(self.ln2(x))
