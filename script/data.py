@@ -5,7 +5,7 @@ from pathlib import Path
 
 batch_size = 32 #quante sequenze processi in paralleloa ogni step, se n alto rende il gradiente meno rumoroso
 block_size = 64  #è la lunghezza del contesto, il modello vede fino a n token per prevedere il n+1,
-n_embd = 128     #è la larghezza della rete
+n_embd = 384     #è la larghezza della rete
 n_layer = 6     #è la profondita della rete
 num_heads = 4   #numero di teste
 head_size = n_embd // num_heads #ogni testa lavora in un sottospazio di x dimensioni
