@@ -160,18 +160,18 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
 eval_iters = 200   # su quanti batch mediare la misura
 
-@torch.no_grad()                     #dice a PyTorch "non costruire il grafo dei gradienti qui dentro". Stai misurando, non imparando.
+@torch.no_grad()    #non mettere calcolare il grafo dei gradienti, dato che è in modalita di valutazione
 def estimate_loss(model):
     out = {}
     model.eval()    #mette il modello in modalita valutazione
     for split in ['train', 'val']:
         loss_tot = torch.zeros(eval_iters)    #crea un tensore di zeri che accumula le loss
         for k in range(eval_iters):
-            x, y = get_batch(split)# BUCO 3: pesca un batch dallo split corrente
-            logits, loss = model(x,y)# BUCO 4: passa il batch nel modello e ottieni logits e loss
-            loss_tot[k] = loss.item()# BUCO 5: salva la loss di questo batch nella posizione k del tensore
-        out[split] = loss_tot.mean()# BUCO 6: fai la media del tensore e mettila in out[split]
-    model.train()# BUCO 7: rimetti il modello in modalità training  ← il più infido, non scordarlo
+            x, y = get_batch(split)    #pesca un batch dallo split corrente
+            logits, loss = model(x,y)    #passa il batch nel modello e ottieni logits e loss
+            loss_tot[k] = loss.item()    #salva la loss di questo batch nella posizione k del tensore
+        out[split] = loss_tot.mean()    #fai la media del tensore e la mette in out[split]
+    model.train()    #rimetti il modello in modalità training
     return out
 
 for step in range(15000):
