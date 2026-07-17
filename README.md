@@ -1,9 +1,7 @@
 # Goal:
-This project's goal is to create a NanoGPT with an embedding layer and a neural network.
+- Build a NanoGPT and study the evolution of the model.
 
-# What I've learned:
-- With the creation of this model I've learned how to split the training dataset and validation dataset,
-- The various types of tensor in torch,
-- Why the initial loss (~4.9) is above the uniform baseline (ln(65) ≈ 4.17), because random initialization cause over-confidence, but wrong predictions, which cross-entropy punishes harder than uniform guessing.
-- The multi-head attention, wich with linear operation can give the full contest at the llm and the feedforward can weight the single token,
-- The GPT model can make under 1.8 of loss and win against the simple bigram model.
+# Research:
+- Try with 55k parameters and 10M:
+  This is the initial version of NanoGPT,it has all the tools of a NanoGPT (like multi-head attention, feedforward, ...), I've run this model for 15000 steps and it reached the limit of      1.8      loss on the validation set, with the current dataset this model is too simple and the model is capacity-limited.
+  Then I've run the same architecture, scaled up to 10M parameters, this model memorizes the patterns and overfits, with a 1.55 in validation set but 1.15 in training set, then I've        updated    the model with a dropout method, which turns off a random percentage of neurons in training to prevent the unstable connections used for memorization, and with an amount of 20% the model            reached 1.499 loss on the validation set with 1.22 on the training set.
