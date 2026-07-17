@@ -81,6 +81,7 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.heads = nn.ModuleList([Attention(head_size) for _ in range(num_heads)]) #il modulo contiene una lista di moduli
         self.proj = nn.Linear(head_size*num_heads, n_embd)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         out = [h(x) for h in self.heads] #chiamo ogni testa e gli faccio elaborare x
@@ -92,7 +93,6 @@ class MultiHeadAttention(nn.Module):
 class FeedForward(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
-        self.dropout = nn.Dropout(dropout)
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4*n_embd),
             nn.ReLU(),
