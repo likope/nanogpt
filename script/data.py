@@ -10,7 +10,7 @@ n_layer = 6     #è la profondita della rete
 num_heads = 4   #numero di teste
 head_size = n_embd // num_heads #ogni testa lavora in un sottospazio di x dimensioni
 max_new_tokens = 200    #numero di token da generare nella risposta finale
-dropout = 0.3 #30%
+dropout = 0.2 #20%
 device = 'cuda' if torch.cuda.is_available() else 'cpu' #device = gpu senno cpu
 print(f"Device = {device}")
 Base_path = Path(__file__).parent.parent #/nanogpt
@@ -184,6 +184,13 @@ for step in range(15000):
         losses = estimate_loss(model)
         print(step, losses['train'], losses['val'])
 
+torch.save({
+    'model': model.state_dict(),
+    'config': {n_embd, num_heads, n_layer, block_size, vocab_size, dropout},
+    'stoi': stoi,
+    'itos': itos,
+    'val_loss': losses['val'].item(),
+}, '/content/drive/MyDrive/nanogpt/ckpt_10M.pt')  #salvataggio dei pesi del modello
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
 out = generate(model, context, max_new_tokens)
 print(decode(out[0].tolist()))
